@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+.pet.lock
+*.log
+duck_settings.json
+source.gif
+.env
+*.mp4
+record_demo.py
