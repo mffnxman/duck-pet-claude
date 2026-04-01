@@ -74,6 +74,10 @@ Uses Edge TTS for speech and Whisper for listening. Say "bye" or "stop" to end.
 - **Duck won't start** — Delete `.pet.lock` if it exists, then try again.
 - **Terminal blank** — Click inside the terminal window to focus it. Type something.
 
+## Pre-built Version
+
+Don't want to set up Python? A ready-to-run zip is available on Gumroad — search "Duck Pet Claude" by Mffn.
+
 ## License
 
 Free for personal use. Do whatever you want with it.
