@@ -2,6 +2,8 @@
 
 A pixel art desktop duck that walks around your screen with a built-in Claude Code terminal.
 
+![Demo](demo.gif)
+
 Click the duck to wave. Right-click for the menu. Open **Chat** to get a full Claude Code terminal floating above the duck's head.
 
 ## Requirements
