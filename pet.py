@@ -9,6 +9,7 @@ from tkinter import font as tkfont
 from PIL import Image, ImageTk, ImageSequence
 import os
 import sys
+import json
 import random
 import time
 import subprocess
@@ -17,10 +18,39 @@ import psutil
 import shutil
 from duck_terminal import DuckTerminal
 from brain import search as brain_search
+from personality import Personality
 
-LOCK_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".pet.lock")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+LOCK_FILE = os.path.join(BASE_DIR, ".pet.lock")
+CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 CREATE_NO_WINDOW = 0x08000000
 CLAUDE_BIN = shutil.which("claude") or os.path.expanduser(r"~\.local\bin\claude.exe")
+
+
+def load_config():
+    """Load config.json, return defaults if missing."""
+    defaults = {
+        "sprite_pack": "default",
+        "pet_name": "Duck",
+        "personality": {
+            "enabled": True,
+            "quip_interval_min": 45,
+            "quip_interval_max": 120,
+            "greeting_on_start": True,
+        },
+    }
+    if os.path.isfile(CONFIG_FILE):
+        try:
+            with open(CONFIG_FILE, "r") as f:
+                user = json.load(f)
+            # Merge personality sub-dict
+            if "personality" in user:
+                defaults["personality"].update(user["personality"])
+                user["personality"] = defaults["personality"]
+            defaults.update(user)
+        except (json.JSONDecodeError, OSError):
+            pass
+    return defaults
 
 
 def ensure_singleton():
@@ -42,10 +72,25 @@ def ensure_singleton():
 
 ensure_singleton()
 
-SPRITE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sprites")
 PET_SIZE = 256
 WALK_SPEED = 5
 CHECK_CLAUDE_INTERVAL = 5000
+
+
+def resolve_sprite_dir(config):
+    """Resolve sprite directory from config. Supports:
+    - "default" -> ./sprites/
+    - A name  -> ./sprite_packs/<name>/
+    - An absolute path
+    """
+    pack = config.get("sprite_pack", "default")
+    if pack == "default":
+        return os.path.join(BASE_DIR, "sprites")
+    # Absolute path
+    if os.path.isabs(pack):
+        return pack
+    # Named pack under sprite_packs/
+    return os.path.join(BASE_DIR, "sprite_packs", pack)
 
 
 class ChatBubble:
@@ -220,6 +265,11 @@ class ChatBubble:
 
 class DesktopPet:
     def __init__(self):
+        self.config = load_config()
+        self.sprite_dir = resolve_sprite_dir(self.config)
+        self.pet_name = self.config.get("pet_name", "Duck")
+        self.personality = Personality(self.config.get("personality", {}))
+
         self.root = tk.Tk()
         self.root.title("Claude Pet")
         self.root.attributes("-topmost", True)
@@ -270,19 +320,28 @@ class DesktopPet:
         self.animate()
         self.behavior_loop()
         self.check_claude_running()
+        self.personality_loop()
 
-        # Boot Claude session in background immediately
-        # Startup greeting
-        self.root.after(2000, lambda: self.chat.show_message("Hey! Right-click me to chat.", 5000))
+        # Startup greeting from personality
+        greeting = self.personality.get_startup_greeting()
+        if greeting:
+            self.root.after(2000, lambda: self.chat.show_message(greeting, 5000))
+        else:
+            self.root.after(2000, lambda: self.chat.show_message("Hey! Right-click me to chat.", 5000))
 
-        print("[Claude Pet] Duck is alive! Right-click for menu.")
+        print(f"[Claude Pet] {self.pet_name} is alive! Right-click for menu.")
 
     # Terminal handles Claude communication via PTY
 
     def load_sprites(self):
+        if not os.path.isdir(self.sprite_dir):
+            print(f"[Claude Pet] Sprite directory not found: {self.sprite_dir}")
+            print(f"[Claude Pet] Falling back to default sprites.")
+            self.sprite_dir = os.path.join(BASE_DIR, "sprites")
+
         for name in ["idle", "walk_right", "walk_left", "sit",
                       "active", "wave", "talk", "celebrate", "listen"]:
-            path = os.path.join(SPRITE_DIR, f"{name}.gif")
+            path = os.path.join(self.sprite_dir, f"{name}.gif")
             if os.path.exists(path):
                 gif = Image.open(path)
                 frames = []
@@ -397,10 +456,25 @@ class DesktopPet:
             self.last_active = time.time()
             if self.state in ("idle", "sit"):
                 self.set_state("active")
+            quip = self.personality.on_claude_started()
+            if quip:
+                self.chat.show_message(quip, 3000)
         elif not self.claude_running and was_running:
             self.set_state("celebrate")
+            quip = self.personality.on_claude_finished()
+            if quip:
+                self.chat.show_message(quip, 3000)
 
         self.root.after(CHECK_CLAUDE_INTERVAL, self.check_claude_running)
+
+    def personality_loop(self):
+        """Check for idle quips periodically."""
+        # Don't quip if chat bubble or terminal is active
+        if not self.chat.window and not self.terminal.is_open():
+            quip = self.personality.check_idle_quip(self.state)
+            if quip:
+                self.chat.show_message(quip, 3500)
+        self.root.after(10000, self.personality_loop)
 
     # ── Mouse Events ──
 
@@ -438,11 +512,71 @@ class DesktopPet:
         menu.add_command(label="Wave!", command=lambda: self.set_state("wave"))
         menu.add_command(label="Celebrate!", command=lambda: self.set_state("celebrate"))
         menu.add_separator()
+
+        # Sprite pack submenu
+        packs = self._list_sprite_packs()
+        if len(packs) > 1:
+            pack_menu = tk.Menu(menu, tearoff=0, bg="#1e1b2e", fg="#e2e8f0",
+                                activebackground="#7c3aed", activeforeground="white",
+                                font=("Segoe UI", 10))
+            current = self.config.get("sprite_pack", "default")
+            for pack_name in packs:
+                label = f"{'> ' if pack_name == current else '  '}{pack_name}"
+                pack_menu.add_command(
+                    label=label,
+                    command=lambda p=pack_name: self.switch_sprite_pack(p)
+                )
+            menu.add_cascade(label="Sprites", menu=pack_menu)
+            menu.add_separator()
+
+        # Personality toggle
+        p_label = "Personality: ON" if self.personality.enabled else "Personality: OFF"
+        menu.add_command(label=p_label, command=self.toggle_personality)
+
         status = "Working" if self.claude_running else "Chillin'"
         menu.add_command(label=f"Status: {status}", state="disabled")
         menu.add_separator()
         menu.add_command(label="Quit", command=self.quit)
         menu.tk_popup(event.x_root, event.y_root)
+
+    def _list_sprite_packs(self):
+        """List available sprite packs."""
+        packs = ["default"]
+        packs_dir = os.path.join(BASE_DIR, "sprite_packs")
+        if os.path.isdir(packs_dir):
+            for name in sorted(os.listdir(packs_dir)):
+                pack_path = os.path.join(packs_dir, name)
+                if os.path.isdir(pack_path) and os.path.isfile(os.path.join(pack_path, "idle.gif")):
+                    packs.append(name)
+        return packs
+
+    def switch_sprite_pack(self, pack_name):
+        """Hot-swap sprites without restarting."""
+        self.config["sprite_pack"] = pack_name
+        self.sprite_dir = resolve_sprite_dir(self.config)
+        # Save to config.json
+        try:
+            with open(CONFIG_FILE, "w") as f:
+                json.dump(self.config, f, indent=2)
+        except OSError:
+            pass
+        # Reload sprites
+        self.sprites.clear()
+        self.load_sprites()
+        self.frame_index = 0
+        self.chat.show_message(f"Switched to {pack_name}!", 2500)
+
+    def toggle_personality(self):
+        """Toggle personality quips on/off."""
+        self.personality.enabled = not self.personality.enabled
+        self.config["personality"]["enabled"] = self.personality.enabled
+        try:
+            with open(CONFIG_FILE, "w") as f:
+                json.dump(self.config, f, indent=2)
+        except OSError:
+            pass
+        state = "on" if self.personality.enabled else "off"
+        self.chat.show_message(f"Personality {state}.", 2000)
 
     def toggle_sit(self):
         """Toggle sit mode — stays sitting until clicked again."""

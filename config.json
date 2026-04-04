@@ -1,0 +1,10 @@
+{
+  "sprite_pack": "default",
+  "pet_name": "Duck",
+  "personality": {
+    "enabled": true,
+    "quip_interval_min": 45,
+    "quip_interval_max": 120,
+    "greeting_on_start": true
+  }
+}
