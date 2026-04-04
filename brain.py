@@ -1,15 +1,41 @@
 """
 Duck Brain — searches Obsidian vault + claude-mem for relevant context.
 Two knowledge sources:
-  1. Obsidian vault (MaintenX notes)
+  1. Obsidian vault (markdown notes)
   2. claude-mem SQLite DB (observations + session summaries from past sessions)
 """
 import os
 import re
 import sqlite3
+import json
 from collections import defaultdict
 
-VAULT_PATH = os.path.expanduser(r"~\Obsidian\MaintenX")
+# Load vault path from config, or scan for first Obsidian vault
+_BASE = os.path.dirname(os.path.abspath(__file__))
+_CONFIG = os.path.join(_BASE, "config.json")
+
+def _find_vault():
+    """Find Obsidian vault path from config or auto-detect."""
+    if os.path.isfile(_CONFIG):
+        try:
+            with open(_CONFIG) as f:
+                cfg = json.load(f)
+            if "obsidian_vault" in cfg:
+                return os.path.expanduser(cfg["obsidian_vault"])
+        except (json.JSONDecodeError, OSError):
+            pass
+    # Auto-detect: look for common Obsidian locations
+    for candidate in [r"~\Obsidian", r"~\Documents\Obsidian", r"~\Notes"]:
+        path = os.path.expanduser(candidate)
+        if os.path.isdir(path):
+            # Use first subfolder that has .md files
+            for d in os.listdir(path):
+                sub = os.path.join(path, d)
+                if os.path.isdir(sub) and any(f.endswith(".md") for f in os.listdir(sub)):
+                    return sub
+    return ""
+
+VAULT_PATH = _find_vault()
 CLAUDE_MEM_DB = os.path.expanduser(r"~\.claude-mem\claude-mem.db")
 
 
