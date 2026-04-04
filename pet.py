@@ -154,6 +154,21 @@ class ChatBubble:
             self.parent.root.after_cancel(self._hide_timer)
         self._hide_timer = self.parent.root.after(duration, self.hide)
 
+    def reposition(self):
+        """Move the bubble to stay above the pet's current position."""
+        if not self.window:
+            return
+        try:
+            bw = self.window.winfo_width()
+            bh = self.window.winfo_height()
+            px = int(self.parent.x + PET_SIZE // 2 - bw // 2)
+            py = int(self.parent.y - bh - 10)
+            px = max(10, min(px, self.parent.screen_w - bw - 10))
+            py = max(10, py)
+            self.window.geometry(f"+{px}+{py}")
+        except tk.TclError:
+            pass
+
     def hide(self):
         if self.window:
             try:
@@ -354,6 +369,8 @@ class DesktopPet:
 
     def update_position(self):
         self.root.geometry(f"{PET_SIZE}x{PET_SIZE}+{int(self.x)}+{int(self.y)}")
+        # Move chat bubble with duck
+        self.chat.reposition()
         # Move terminal with duck if it's open
         if self.terminal.is_open():
             tw = self.terminal.window.winfo_width()
