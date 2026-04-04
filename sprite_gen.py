@@ -1,13 +1,30 @@
 """Extract frames from the original duck GIF and create sprite sheets.
 Uses the ACTUAL pixel data — no approximation.
+
+Usage:
+  python sprite_gen.py source.gif                     # -> sprites/
+  python sprite_gen.py my_cat.gif --output sprite_packs/cat  # -> sprite_packs/cat/
 """
 from PIL import Image, ImageDraw
 import os, sys
 
+# Parse args
+args = sys.argv[1:]
+SRC = os.path.join(os.path.dirname(__file__), "source.gif")
 SPRITE_DIR = os.path.join(os.path.dirname(__file__), "sprites")
-os.makedirs(SPRITE_DIR, exist_ok=True)
 
-SRC = sys.argv[1] if len(sys.argv) > 1 else os.path.join(os.path.dirname(__file__), "source.gif")
+i = 0
+while i < len(args):
+    if args[i] == "--output" and i + 1 < len(args):
+        SPRITE_DIR = args[i + 1]
+        if not os.path.isabs(SPRITE_DIR):
+            SPRITE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), SPRITE_DIR)
+        i += 2
+    else:
+        SRC = args[i]
+        i += 1
+
+os.makedirs(SPRITE_DIR, exist_ok=True)
 BG_COLOR = (50, 60, 57)  # Dark background in original
 
 # Load source GIF

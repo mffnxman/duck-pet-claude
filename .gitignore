@@ -7,3 +7,5 @@ source.gif
 .env
 *.mp4
 record_demo.py
+.playwright-mcp/
+alabama_expansion_plan.html
