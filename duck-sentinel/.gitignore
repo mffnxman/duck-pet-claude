@@ -1,0 +1,16 @@
+# Runtime state — never commit
+__pycache__/
+*.pyc
+*.log
+bus.db
+duck_session_id.txt
+.env
+
+# Your private persona + the duck's learned observations stay local.
+# (the README and example template ARE tracked)
+persona/*.md
+!persona/README.md
+!persona/example-context.md
+
+# Runtime sub-agent instance dirs (the agent TYPE *.py files are tracked)
+agents/*/

@@ -1,0 +1,10 @@
+{
+  "user_name": "boss",
+  "persona_dir": "persona",
+  "watch_dirs": ["~/Downloads/duck_scratchpad"],
+  "mobile_push": {
+    "enabled": false,
+    "vault_dir": "",
+    "env_file": ""
+  }
+}
