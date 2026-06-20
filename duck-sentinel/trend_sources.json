@@ -1,0 +1,23 @@
+{
+  "_comment": "Duck Radar sources. Edit freely. 'builder' = what people ship (models, agents, local LLM); 'creator' = what people make (AI video/content, viral tools). Reddit is fetched token-free via the public .json API. web_queries are searched by the warm Claude session at curate time (covers TikTok, which has no easy public API).",
+  "reddit": {
+    "builder": ["LocalLLaMA", "singularity", "AI_Agents", "MachineLearning", "ClaudeAI"],
+    "creator": ["StableDiffusion", "aivideo", "ChatGPT", "midjourney"]
+  },
+  "reddit_listing": "top",
+  "reddit_time": "day",
+  "reddit_limit_per_sub": 10,
+  "web_queries": {
+    "creator": [
+      "trending AI on TikTok this week",
+      "viral AI video tool this week"
+    ],
+    "builder": [
+      "biggest open-source LLM or AI model release this week"
+    ]
+  },
+  "max_items_per_lane": 12,
+  "briefing_hour": 9,
+  "briefing_minute": 30,
+  "refetch_after_minutes": 180
+}

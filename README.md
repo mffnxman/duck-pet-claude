@@ -6,6 +6,16 @@ A pixel art desktop duck that walks around your screen with a built-in Claude Co
 
 Click the duck to wave. Right-click for the menu. Open **Chat** to get a full Claude Code terminal floating above the duck's head.
 
+## 🆕 Duck Sentinel — the co-pilot upgrade
+
+The duck grew a brain. **[Duck Sentinel](duck-sentinel/)** turns the pet into a
+local-first JARVIS: a free, always-on layer watches your machine, a local LLM
+triages everything, and Claude Code only wakes up when something actually
+matters — then talks to you through the duck's bubble. Includes **🛰️ Duck
+Radar**, a daily *"what's trending in AI"* digest (builder + creator).
+
+→ **[duck-sentinel/](duck-sentinel/)**
+
 ## Features
 
 - **Built-in Claude Code terminal** — right-click the duck, hit Chat, and a full PTY terminal opens above its head. Everything you can do in Claude Code works here.
