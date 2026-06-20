@@ -1,0 +1,8 @@
+# Keep shell scripts LF so they run on macOS/Linux clones
+*.sh   text eol=lf
+*.py   text eol=lf
+*.md   text eol=lf
+*.json text eol=lf
+# Windows-only helpers stay CRLF
+*.bat  text eol=crlf
+*.vbs  text eol=crlf
