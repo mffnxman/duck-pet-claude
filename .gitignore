@@ -9,3 +9,11 @@ source.gif
 record_demo.py
 .playwright-mcp/
 alabama_expansion_plan.html
+
+# per-user state that must never be committed
+companion_memory.json
+duck_scratchpad/
+duck-sentinel/bus.db*
+duck-sentinel/persona/*.md
+!duck-sentinel/persona/README.md
+!duck-sentinel/persona/example-context.md

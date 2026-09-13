@@ -151,4 +151,4 @@ Don't want to set up Python? A ready-to-run zip is available on Gumroad — sear
 
 ## License
 
-Free for personal use. Do whatever you want with it.
+[MIT](LICENSE).
